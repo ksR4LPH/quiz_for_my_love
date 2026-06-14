@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Для Зарин 🐢</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400;1,600&family=Dancing+Script:wght@500;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:linear-gradient(160deg,#0a1a08,#051205,#0a1a08);
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;font-family:'Dancing Script',cursive;
+}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 20% 30%,rgba(40,120,40,0.12),transparent 60%),
+             radial-gradient(ellipse at 80% 70%,rgba(20,100,20,0.08),transparent 60%);
+  pointer-events:none;}
+
+#scene{
+  position:relative;z-index:10;
+  width:min(94vw,420px);
+  display:flex;flex-direction:column;align-items:center;
+  gap:clamp(8px,2vh,14px);padding:0 14px;
+}
+
+/* HISTORY BAR */
+#historyBar{
+  width:100%;display:flex;flex-wrap:wrap;gap:5px;
+  justify-content:center;min-height:28px;
+}
+.hist-item{
+  font-family:'Special Elite',cursive;
+  font-size:clamp(0.55rem,2vw,0.65rem);
+  padding:3px 8px;border-radius:20px;
+  letter-spacing:0.08em;
+  display:flex;align-items:center;gap:4px;
+}
+.hist-item.correct{
+  background:rgba(60,160,40,0.2);
+  border:1px solid rgba(100,200,70,0.4);
+  color:rgba(150,240,110,0.9);
+}
+.hist-item.wrong{
+  background:rgba(160,40,40,0.2);
+  border:1px solid rgba(220,80,80,0.4);
+  color:rgba(255,140,130,0.9);
+}
+.hist-item.retry{
+  background:rgba(180,140,20,0.2);
+  border:1px solid rgba(220,180,40,0.4);
+  color:rgba(255,220,100,0.9);
+}
+
+/* PROGRESS */
+#progressWrap{
+  width:100%;display:flex;align-items:center;gap:8px;
+}
+#progressBar{
+  flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;
+}
+#progressFill{
+  height:100%;background:linear-gradient(90deg,#3a8a30,#60cc40);
+  border-radius:4px;transition:width 0.5s ease;width:0%;
+}
+#progressText{
+  font-family:'Special Elite',cursive;
+  font-size:clamp(0.58rem,2.2vw,0.7rem);
+  color:rgba(120,200,90,0.6);letter-spacing:0.1em;white-space:nowrap;
+}
+
+/* TURTLE */
+#turtleStage{
+  width:100%;
+  background:rgba(10,25,8,0.7);
+  border:1px solid rgba(80,160,60,0.2);
+  border-radius:14px;
+  padding:clamp(10px,2.5vw,16px);
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5),inset 0 0 30px rgba(20,60,10,0.3);
+}
+#turtleCanvas{
+  width:clamp(70px,20vw,90px);height:clamp(56px,16vw,72px);flex-shrink:0;
+}
+#bubble{
+  flex:1;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(120,200,90,0.2);
+  border-radius:10px;padding:8px 12px;
+  min-height:44px;display:flex;align-items:center;
+  position:relative;
+}
+#bubble::before{
+  content:'◀';position:absolute;left:-8px;
+  color:rgba(120,200,90,0.2);font-size:0.7rem;
+}
+#bubbleText{
+  font-family:'Dancing Script',cursive;font-weight:500;
+  font-size:clamp(0.78rem,3.2vw,0.92rem);
+  color:rgba(200,240,180,0.88);line-height:1.4;
+}
+
+/* QUESTION */
+#questionBox{width:100%;text-align:center;}
+#questionNum{
+  font-family:'Special Elite',cursive;
+  font-size:clamp(0.56rem,2vw,0.68rem);
+  color:rgba(120,200,90,0.45);letter-spacing:0.18em;margin-bottom:5px;
+}
+#questionText{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(0.95rem,4.2vw,1.22rem);
+  color:rgba(220,255,200,0.92);line-height:1.3;
+}
+
+/* ANSWERS */
+#answers{width:100%;display:flex;flex-direction:column;gap:clamp(6px,1.5vh,9px);}
+.ans-btn{
+  width:100%;padding:clamp(10px,2.2vh,13px) clamp(12px,3vw,16px);
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid rgba(100,180,70,0.22);
+  border-radius:10px;
+  font-family:'Dancing Script',cursive;font-weight:600;
+  font-size:clamp(0.85rem,3.5vw,1.02rem);
+  color:rgba(200,240,170,0.88);
+  text-align:left;cursor:pointer;
+  transition:all 0.22s ease;
+  display:flex;align-items:center;gap:9px;
+  -webkit-tap-highlight-color:transparent;
+}
+.ans-btn:active{transform:scale(0.98);}
+.ans-btn.correct{border-color:rgba(100,220,80,0.8);background:rgba(60,160,40,0.2);color:rgba(180,255,150,0.98);animation:correctPop 0.4s ease;}
+.ans-btn.wrong{border-color:rgba(220,80,80,0.6);background:rgba(160,40,40,0.15);color:rgba(255,150,150,0.8);animation:wrongShake 0.4s ease;}
+.ans-btn.disabled{opacity:0.4;pointer-events:none;}
+@keyframes correctPop{0%{transform:scale(1);}50%{transform:scale(1.02);}100%{transform:scale(1);}}
+@keyframes wrongShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+.ans-letter{
+  width:clamp(20px,5vw,26px);height:clamp(20px,5vw,26px);
+  background:rgba(100,180,70,0.12);border:1px solid rgba(100,180,70,0.28);
+  border-radius:5px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Special Elite',cursive;
+  font-size:clamp(0.58rem,2vw,0.7rem);
+  color:rgba(150,220,110,0.7);transition:all 0.22s;
+}
+.ans-btn.correct .ans-letter{background:rgba(80,200,50,0.3);border-color:rgba(100,220,80,0.6);color:#fff;}
+.ans-btn.wrong .ans-letter{background:rgba(200,50,50,0.2);border-color:rgba(220,80,80,0.4);}
+
+/* COMPLIMENT POPUP */
+#compPopup{
+  position:fixed;inset:0;z-index:100;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity 0.4s ease;
+}
+#compPopup.show{opacity:1;pointer-events:all;}
+#compPopup::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(12px);}
+.comp-card{
+  position:relative;z-index:2;width:100%;max-width:330px;
+  background:linear-gradient(160deg,#0d200a,#081508);
+  border:1.5px solid rgba(100,200,70,0.3);border-radius:20px;
+  padding:clamp(20px,5vw,30px) clamp(18px,4.5vw,26px);
+  box-shadow:0 16px 50px rgba(0,0,0,0.7);
+  transform:scale(0.85) translateY(24px);
+  transition:transform 0.5s cubic-bezier(.16,1,.3,1);text-align:center;overflow:hidden;
+}
+#compPopup.show .comp-card{transform:scale(1) translateY(0);}
+.comp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(100,200,70,0.5),rgba(150,240,100,0.9),rgba(100,200,70,0.5),transparent);}
+.comp-icon{font-size:clamp(1.8rem,8vw,2.6rem);margin-bottom:8px;animation:cpop 0.5s cubic-bezier(.36,1.56,.64,1);}
+@keyframes cpop{0%{transform:scale(0) rotate(-20deg);}70%{transform:scale(1.15) rotate(5deg);}100%{transform:scale(1) rotate(0deg);}}
+.comp-label{font-family:'Special Elite',cursive;font-size:clamp(0.55rem,2vw,0.65rem);
+  letter-spacing:0.22em;text-transform:uppercase;color:rgba(120,200,90,0.45);margin-bottom:6px;}
+.comp-title{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1rem,4.5vw,1.35rem);color:rgba(180,255,140,0.95);margin-bottom:8px;line-height:1.2;}
+.comp-div{width:36px;height:1px;background:linear-gradient(90deg,transparent,rgba(100,200,70,0.5),transparent);margin:0 auto 12px;}
+.comp-text{font-family:'Dancing Script',cursive;font-weight:500;
+  font-size:clamp(0.88rem,3.8vw,1.05rem);line-height:1.75;color:rgba(200,240,170,0.88);}
+.comp-text p{margin-bottom:6px;}
+.comp-text p:last-child{margin-bottom:0;}
+.comp-text .hi{font-weight:700;color:rgba(180,255,140,0.98);}
+.comp-btn{margin-top:clamp(12px,2.5vh,18px);padding:9px 24px;
+  background:rgba(80,180,50,0.15);border:1.5px solid rgba(100,200,70,0.4);
+  color:rgba(160,240,120,0.95);font-family:'Dancing Script',cursive;font-weight:700;
+  font-size:clamp(0.88rem,3.5vw,1rem);letter-spacing:0.1em;cursor:pointer;border-radius:40px;transition:all 0.3s;}
+.comp-btn:hover{background:rgba(80,180,50,0.25);}
+
+/* RETRY NOTICE */
+#retryNotice{
+  width:100%;text-align:center;
+  font-family:'Special Elite',cursive;
+  font-size:clamp(0.6rem,2.2vw,0.72rem);
+  color:rgba(255,200,80,0.55);letter-spacing:0.1em;
+  display:none;
+}
+
+/* LETTER */
+#letterOverlay{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+  opacity:0;pointer-events:none;transition:opacity 0.8s ease;
+}
+#letterOverlay.show{opacity:1;pointer-events:all;}
+#letterOverlay::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(18px);}
+.lcard{
+  position:relative;z-index:2;width:100%;max-width:385px;
+  background:linear-gradient(160deg,#0d200a,#081508,#0d200a);
+  border:1px solid rgba(100,200,70,0.2);border-radius:16px;
+  padding:clamp(24px,5.5vw,36px) clamp(22px,5.5vw,32px) clamp(20px,4.5vw,28px);
+  box-shadow:0 20px 70px rgba(0,0,0,0.85);
+  transform:scale(0.88) translateY(22px);transition:transform 0.65s cubic-bezier(.16,1,.3,1);overflow:hidden;
+}
+#letterOverlay.show .lcard{transform:scale(1) translateY(0);}
+.lcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(100,200,70,0.5),rgba(150,240,100,0.9),rgba(100,200,70,0.5),transparent);}
+.lclose{position:absolute;top:12px;right:14px;background:transparent;border:none;
+  color:rgba(100,200,70,0.35);font-size:1.1rem;cursor:pointer;padding:4px 6px;line-height:1;transition:color 0.2s;}
+.lclose:hover{color:rgba(150,240,100,0.8);}
+.l-deco{text-align:center;font-size:clamp(1.5rem,6vw,2rem);margin-bottom:10px;}
+.l-name{font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.15rem,5.2vw,1.6rem);color:rgba(180,255,140,0.95);text-align:center;margin-bottom:8px;}
+.l-div{width:48px;height:1px;background:linear-gradient(90deg,transparent,rgba(100,200,70,0.5),transparent);margin:0 auto 18px;}
+.l-body{font-family:'Dancing Script',cursive;font-weight:500;
+  font-size:clamp(0.95rem,4.2vw,1.12rem);line-height:1.88;color:rgba(200,240,170,0.82);text-align:center;}
+.l-body p{margin-bottom:12px;}
+.l-body p:last-child{margin-bottom:0;}
+.l-body .hi{font-weight:700;color:rgba(180,255,140,0.98);}
+.l-sig{text-align:right;margin-top:16px;font-family:'Dancing Script',cursive;font-weight:500;
+  font-size:clamp(0.78rem,3vw,0.92rem);color:rgba(100,200,70,0.4);}
+
+#musicBtn{position:fixed;top:16px;right:16px;z-index:300;
+  width:40px;height:40px;border-radius:50%;
+  border:1px solid rgba(100,180,60,0.3);background:rgba(5,15,3,0.7);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:all 0.3s;}
+#musicBtn.playing{border-color:rgba(120,220,80,0.7);animation:mp 1.2s ease infinite;}
+@keyframes mp{0%,100%{box-shadow:0 0 0 0 rgba(100,200,60,0.4);}50%{box-shadow:0 0 0 8px rgba(100,200,60,0);}}
+</style>
+</head>
+<body>
+<audio id="bgMusic" loop preload="auto"><source src="music.mp3" type="audio/mpeg"></audio>
+
+<div id="scene">
+  <!-- HISTORY -->
+  <div id="historyBar"></div>
+
+  <!-- PROGRESS -->
+  <div id="progressWrap">
+    <div id="progressBar"><div id="progressFill"></div></div>
+    <div id="progressText">0 / 10</div>
+  </div>
+
+  <!-- TURTLE -->
+  <div id="turtleStage">
+    <canvas id="turtleCanvas"></canvas>
+    <div id="bubble"><div id="bubbleText">Привет! Готова отвечать? 🐢</div></div>
+  </div>
+
+  <!-- RETRY NOTICE -->
+  <div id="retryNotice">🔄 Неправильные вопросы вернутся снова!</div>
+
+  <!-- QUESTION -->
+  <div id="questionBox">
+    <div id="questionNum"></div>
+    <div id="questionText"></div>
+  </div>
+
+  <!-- ANSWERS -->
+  <div id="answers"></div>
+</div>
+
+<!-- COMPLIMENT POPUP -->
+<div id="compPopup">
+  <div class="comp-card">
+    <div class="comp-icon" id="compIcon"></div>
+    <div class="comp-label">открытие дня</div>
+    <div class="comp-title" id="compTitle"></div>
+    <div class="comp-div"></div>
+    <div class="comp-text" id="compText"></div>
+    <button class="comp-btn" id="compBtn">Продолжить 🐢</button>
+  </div>
+</div>
+
+<!-- LETTER -->
+<div id="letterOverlay">
+  <div class="lcard">
+    <button class="lclose" onclick="closeLetter()">✕</button>
+    <div class="l-deco">🐢</div>
+    <div class="l-name">Зарин, моя любимая...</div>
+    <div class="l-div"></div>
+    <div class="l-body">
+      <p>Ты ответила на все вопросы верно!<br>Это значит — <span class="hi">ты умная, терпеливая</span><br>и немного любишь черепашек)</p>
+      <p>Но всё что говорил тошбака —<br><span class="hi">это правда. Про тебя.</span></p>
+      <p>Ты особенная.<br>И я <span class="hi">люблю тебя, Зарин. 💚</span></p>
+    </div>
+    <div class="l-sig">— from ramz1k ti JK)💚</div>
+  </div>
+</div>
+<div id="musicBtn" onclick="toggleMusic()">🎵</div>
+
+<script>
+// ===== QUIZ DATA — 10 savollar =====
+const allQuestions=[
+  {q:'Что происходит, когда ты улыбаешься?',
+   answers:['Ничего особенного','Мир становится лучше','Просто мышцы'],correct:1,
+   icon:'😊',title:'Твоя улыбка',
+   comp:`<p>Когда ты улыбаешься —</p><p>весь мир буквально <span class="hi">становится лучше.</span></p><p>Это твоя суперсила.</p>`},
+  {q:'Сколько таких, как ты, существует?',
+   answers:['Миллионы','Несколько','Только один — ты'],correct:2,
+   icon:'💎',title:'Твоя уникальность',
+   comp:`<p>Таких, как ты, больше нет.</p><p>Ты — <span class="hi">единственная в своём роде.</span></p><p>И это самое ценное.</p>`},
+  {q:'Что чувствуешь рядом с любимым человеком?',
+   answers:['Тепло и спокойствие','Ничего','Скуку'],correct:0,
+   icon:'🌿',title:'Рядом с тобой',
+   comp:`<p>Именно это — тепло.</p><p>Именно это я чувствую <span class="hi">рядом с тобой.</span></p><p>Каждый раз.</p>`},
+  {q:'Как называется человек, делающий день лучше?',
+   answers:['Обычный человек','Просто знакомый','Ты'],correct:2,
+   icon:'☀️',title:'Твой свет',
+   comp:`<p>Именно ты.</p><p>Ты делаешь мой день лучше —</p><p><span class="hi">просто своим существованием.</span></p>`},
+  {q:'Что важнее всего в человеке?',
+   answers:['Внешность','Быть настоящим','Деньги'],correct:1,
+   icon:'💫',title:'Твоя душа',
+   comp:`<p>Ты — настоящая.</p><p>Искренняя, живая, своя.</p><p><span class="hi">Это дороже всего на свете.</span></p>`},
+  {q:'Что происходит, когда ты смеёшься?',
+   answers:['Просто смех','Время останавливается','Ничего'],correct:1,
+   icon:'😂',title:'Твой смех',
+   comp:`<p>Твой смех —</p><p>лучшее, что я слышал.</p><p><span class="hi">Я готов слушать его вечно.</span></p>`},
+  {q:'Сколько раз в день я думаю о тебе?',
+   answers:['Иногда','Редко','Постоянно'],correct:2,
+   icon:'❤️',title:'Моя любовь',
+   comp:`<p>Постоянно.</p><p>Утром, днём, ночью —</p><p><span class="hi">ты всегда в моих мыслях.</span></p>`},
+  {q:'Что делает тебя особенной?',
+   answers:['Ничего особенного','Всё — от и до','Только внешность'],correct:1,
+   icon:'🌸',title:'Ты — целиком',
+   comp:`<p>Всё в тебе особенное.</p><p>От твоих глаз до твоего характера.</p><p><span class="hi">Ты — шедевр.</span></p>`},
+  {q:'Какой звук самый приятный?',
+   answers:['Музыка','Твой голос','Тишина'],correct:1,
+   icon:'🎵',title:'Твой голос',
+   comp:`<p>Твой голос —</p><p>лучший звук на свете.</p><p><span class="hi">Говори что угодно — лишь говори.</span></p>`},
+  {q:'Что ты для меня значишь?',
+   answers:['Многое','Всё','Немного'],correct:1,
+   icon:'🌟',title:'Ты — моё всё',
+   comp:`<p>Ты значишь для меня всё.</p><p>Не преувеличение — </p><p><span class="hi">просто правда.</span></p>`},
+];
+
+// ===== STATE =====
+let queue=[...allQuestions]; // to'g'ri javob kutayotgan savollar
+let wrongQueue=[]; // xato javob berilganlar — oxiriga qo'shiladi
+let history=[]; // {idx, status:'correct'|'wrong'|'retry'}
+let correctCount=0;
+let currentIdx=0; // queue dagi joriy o'rin
+let answered=false;
+let turtleState='idle';
+let turtleAnim=0;
+
+// ===== TURTLE CANVAS =====
+const tc=document.getElementById('turtleCanvas');
+const tctx=tc.getContext('2d');
+const TW=100,TH=80;
+tc.width=TW*2;tc.height=TH*2;
+tc.style.width=TW+'px';tc.style.height=TH+'px';
+tctx.scale(2,2);
+
+function drawTurtle(state,anim){
+  tctx.clearRect(0,0,TW,TH);
+  const cx=TW*0.45,cy=TH*0.62,sc=TW*0.24;
+  const legOff=state==='walk'?Math.sin(anim*8)*3:0;
+  const bodyY=state==='happy'?cy-2.5*Math.abs(Math.sin(anim*6)):cy;
+
+  // shadow
+  tctx.save();tctx.globalAlpha=0.12;tctx.fillStyle='#000';
+  tctx.beginPath();tctx.ellipse(cx,cy+sc*0.75,sc*0.75,sc*0.18,0,0,Math.PI*2);tctx.fill();tctx.restore();
+
+  // legs
+  [[-0.6,-0.18],[0.6,-0.18],[-0.5,0.38],[0.5,0.38]].forEach(([lx,ly],i)=>{
+    tctx.save();tctx.fillStyle='#3a8a30';
+    tctx.beginPath();tctx.ellipse(cx+lx*sc,bodyY+ly*sc+(i%2===0?1:-1)*legOff,sc*0.2,sc*0.13,lx>0?0.3:-0.3,0,Math.PI*2);tctx.fill();tctx.restore();
+  });
+
+  // body
+  const grad=tctx.createRadialGradient(cx-sc*0.2,bodyY-sc*0.2,0,cx,bodyY,sc);
+  grad.addColorStop(0,'#4aaa38');grad.addColorStop(0.6,'#2d7a22');grad.addColorStop(1,'#1a5014');
+  tctx.fillStyle=grad;
+  tctx.beginPath();tctx.ellipse(cx,bodyY,sc*0.72,sc*0.52,0,0,Math.PI*2);tctx.fill();
+  // shell lines
+  tctx.save();tctx.strokeStyle='rgba(20,60,15,0.45)';tctx.lineWidth=0.9;
+  [[0,-0.2],[0.2,0.05],[-0.2,0.05],[0.1,-0.15],[-0.1,-0.15]].forEach(([px,py])=>{
+    tctx.beginPath();tctx.ellipse(cx+px*sc,bodyY+py*sc,sc*0.16,sc*0.12,0,0,Math.PI*2);tctx.stroke();
+  });tctx.restore();
+
+  // head
+  const hShake=state==='shake'?Math.sin(anim*22)*7:0;
+  const hBob=state==='happy'?Math.sin(anim*6)*3:0;
+  const hx=cx+sc*0.68+hShake,hy=bodyY-sc*0.08+hBob;
+  tctx.save();tctx.fillStyle='#3a9030';
+  tctx.beginPath();tctx.ellipse(hx,hy,sc*0.26,sc*0.22,0.3,0,Math.PI*2);tctx.fill();
+  // eye
+  tctx.fillStyle='#fff';tctx.beginPath();tctx.ellipse(hx+sc*0.09,hy-sc*0.07,sc*0.07,sc*0.08,0,0,Math.PI*2);tctx.fill();
+  tctx.fillStyle='#111';tctx.beginPath();tctx.ellipse(hx+sc*0.11,hy-sc*0.06,sc*0.04,sc*0.045,0,0,Math.PI*2);tctx.fill();
+  tctx.fillStyle='rgba(255,255,255,0.7)';tctx.beginPath();tctx.ellipse(hx+sc*0.12,hy-sc*0.09,sc*0.018,sc*0.018,0,0,Math.PI*2);tctx.fill();
+  // mouth
+  tctx.strokeStyle='#1a5014';tctx.lineWidth=1;
+  if(state==='happy'){tctx.beginPath();tctx.arc(hx+sc*0.04,hy+sc*0.06,sc*0.08,0,Math.PI);tctx.stroke();}
+  else if(state==='shake'){tctx.beginPath();tctx.arc(hx+sc*0.04,hy+sc*0.11,sc*0.07,Math.PI,0);tctx.stroke();}
+  else{tctx.beginPath();tctx.moveTo(hx,hy+sc*0.07);tctx.lineTo(hx+sc*0.16,hy+sc*0.05);tctx.stroke();}
+  tctx.restore();
+
+  // happy stars
+  if(state==='happy'&&Math.random()<0.25){
+    tctx.save();tctx.font='8px serif';tctx.globalAlpha=0.8;
+    tctx.fillText('✨',cx+sc*0.5+Math.random()*18-9,bodyY-sc*0.5-Math.random()*12);tctx.restore();
+  }
+}
+
+function animLoop(){
+  turtleAnim+=0.05;
+  drawTurtle(turtleState,turtleAnim);
+  requestAnimationFrame(animLoop);
+}
+animLoop();
+
+// ===== HISTORY BAR =====
+function updateHistory(){
+  const bar=document.getElementById('historyBar');
+  bar.innerHTML='';
+  history.forEach((h,i)=>{
+    const d=document.createElement('div');
+    const q=allQuestions[h.qIdx];
+    d.className='hist-item '+h.status;
+    d.textContent=(h.status==='correct'?'✓ ':h.status==='retry'?'🔄 ':'✗ ')+(i+1)+'. '+q.q.substring(0,18)+'...';
+    bar.appendChild(d);
+  });
+}
+
+// ===== PROGRESS =====
+function updateProgress(){
+  const total=10;
+  const pct=(correctCount/total)*100;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressText').textContent=`${correctCount} / ${total}`;
+}
+
+// ===== LOAD QUESTION =====
+function loadQuestion(){
+  // queue + wrongQueue ni birlashtirgan navbat
+  const combined=[...queue,...wrongQueue];
+  if(correctCount>=10){endGame();return;}
+  if(combined.length===0){endGame();return;}
+
+  // current question
+  const q=combined[0];
+  answered=false;
+  turtleState='idle';
+  document.getElementById('retryNotice').style.display=
+    wrongQueue.length>0?'block':'none';
+
+  const totalAnswered=history.length;
+  const isRetry=wrongQueue.indexOf(q)>=0;
+  document.getElementById('questionNum').textContent=
+    `Вопрос ${totalAnswered+1} ${isRetry?'🔄 (повтор)':''}`;
+  document.getElementById('questionText').textContent=q.q;
+  document.getElementById('bubbleText').textContent=
+    isRetry?'Попробуй ещё раз! Ты справишься! 🐢':'Подумай хорошенько... 🤔';
+
+  const ans=document.getElementById('answers');
+  ans.innerHTML='';
+  const letters=['А','Б','В'];
+  q.answers.forEach((a,i)=>{
+    const btn=document.createElement('button');
+    btn.className='ans-btn';
+    btn.innerHTML=`<span class="ans-letter">${letters[i]}</span>${a}`;
+    btn.onclick=()=>selectAnswer(i,btn,q,isRetry);
+    ans.appendChild(btn);
+  });
+}
+
+// ===== SELECT ANSWER =====
+function selectAnswer(idx,btn,q,isRetry){
+  if(answered) return;
+  answered=true;
+  playMusic();
+  const btns=document.querySelectorAll('.ans-btn');
+  btns.forEach(b=>b.classList.add('disabled'));
+
+  if(idx===q.correct){
+    btn.classList.remove('disabled');
+    btn.classList.add('correct');
+    turtleState='happy';
+    document.getElementById('bubbleText').textContent='Правильно! Молодец! 🎉';
+    correctCount++;
+    updateProgress();
+
+    // history
+    history.push({qIdx:allQuestions.indexOf(q),status:isRetry?'retry':'correct'});
+    updateHistory();
+
+    // remove from queues
+    const qi=queue.indexOf(q);if(qi>=0)queue.splice(qi,1);
+    const wi=wrongQueue.indexOf(q);if(wi>=0)wrongQueue.splice(wi,1);
+
+    setTimeout(()=>showComp(q),700);
+  } else {
+    btn.classList.remove('disabled');
+    btn.classList.add('wrong');
+    btns[q.correct].classList.remove('disabled');
+    btns[q.correct].classList.add('correct');
+    turtleState='shake';
+    document.getElementById('bubbleText').textContent='Неправильно... вернёмся к этому! 🔄';
+
+    history.push({qIdx:allQuestions.indexOf(q),status:'wrong'});
+    updateHistory();
+
+    // move to wrongQueue
+    const qi=queue.indexOf(q);if(qi>=0)queue.splice(qi,1);
+    if(wrongQueue.indexOf(q)<0) wrongQueue.push(q);
+
+    setTimeout(()=>nextQ(),1400);
+  }
+}
+
+// ===== SHOW COMPLIMENT =====
+function showComp(q){
+  document.getElementById('compIcon').textContent=q.icon;
+  document.getElementById('compTitle').textContent=q.title;
+  document.getElementById('compText').innerHTML=q.comp;
+  const btn=document.getElementById('compBtn');
+  btn.textContent='Продолжить 🐢';
+  btn.onclick=()=>{closeComp();nextQ();};
+  document.getElementById('compPopup').classList.add('show');
+}
+function closeComp(){document.getElementById('compPopup').classList.remove('show');}
+
+// ===== NEXT Q =====
+function nextQ(){
+  turtleState='walk';
+  setTimeout(()=>{
+    turtleState='idle';
+    if(correctCount>=10) endGame();
+    else loadQuestion();
+  },500);
+}
+
+// ===== END =====
+function endGame(){
+  document.getElementById('questionText').textContent='Ты ответила на все вопросы! 🎉';
+  document.getElementById('answers').innerHTML='';
+  document.getElementById('questionNum').textContent='Поздравляю!';
+  document.getElementById('bubbleText').textContent='Открывай письмо! Ты заслужила! 💚';
+  turtleState='happy';
+  setTimeout(openLetter,1800);
+}
+
+// ===== LETTER =====
+function openLetter(){document.getElementById('letterOverlay').classList.add('show');}
+function closeLetter(){document.getElementById('letterOverlay').classList.remove('show');}
+document.getElementById('letterOverlay').addEventListener('click',e=>{
+  if(e.target===document.getElementById('letterOverlay')) closeLetter();
+});
+
+// ===== INIT =====
+updateProgress();
+setTimeout(()=>{
+  turtleState='walk';
+  setTimeout(()=>{turtleState='idle';loadQuestion();},700);
+},1200);
+
+let musicPlaying=false;
+function playMusic(){
+  if(musicPlaying)return;
+  document.getElementById('bgMusic').play().then(()=>{
+    document.getElementById('musicBtn').classList.add('playing');
+    document.getElementById('musicBtn').textContent='🎶';
+    musicPlaying=true;
+  }).catch(()=>{});
+}
+function toggleMusic(){
+  const m=document.getElementById('bgMusic'),b=document.getElementById('musicBtn');
+  if(musicPlaying){m.pause();b.classList.remove('playing');b.textContent='🎵';musicPlaying=false;}
+  else{m.play().then(()=>{b.classList.add('playing');b.textContent='🎶';musicPlaying=true;}).catch(()=>{});}
+}
+</script>
+</body>
+</html>
